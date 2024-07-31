@@ -1,0 +1,456 @@
+openapi: "3.0.3"
+
+info:
+  title: Synthetic-Aperture Radar API
+  version: "1.0"
+  description: "**Introduction**<br>
+  GSI Technology Synthetic-aperture radar (SAR) API provides an accessible gateway to converting MATLAB to image 
+  using GSI Gemini® Associative Processing Unit (APU).<br>"
+servers:
+  - url: http://localhost:9090/
+
+
+tags:
+  - name: SAR
+  - name: Utilities
+
+paths:
+  /alive:
+    get:
+      summary: alive message
+      description: Generates a response message indicating server is alive.
+      operationId: controllers.utils_controller.alive
+      tags:
+        - Utilities
+      responses:
+        200:
+          description: Server responded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AliveResponse'
+
+  
+  /sar/image/status/{image_id}:
+    get:
+      summary: Returns the requested image status.
+      description: Returns the requested image status.
+      operationId: controllers.sar_controller.get_image_status
+      tags:
+        - SAR
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '200':
+          description: image status returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          $ref: '#/components/responses/Response400'
+        '500':
+          $ref: '#/components/responses/Response500'
+
+
+  /sar/image/active-list:
+    get:
+      summary: list of images that are in queue or in processed.
+      description: Return a list of images that are in the input queue and the ones that are being processed.
+        The list includes the image identifier and their status which can be one of the following - IMG_ENQUEUED,
+        IMG_WAITING_FOR_IMAGE_Q, IMG_LOADED, IMG_WAITING_FOR_GRL_BP and IMG_PROCESSING and its ordered by shortest  time to process
+      operationId: controllers.sar_controller.get_active_images
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+      tags:
+        - SAR
+      responses:
+        '200':
+          description: images list returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveImagesList'
+        '500':
+          $ref: '#/components/responses/Response500'
+
+
+  /sar/put-image:
+    post:
+      summary: import new SAR image pulses
+      description: Add an image to the queue of creating SAR images from SAR pulses and DTM data using fast
+        Backprojection (BP) algorithm.
+      operationId: controllers.sar_controller.import_image
+      tags:
+        - SAR
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+      responses:
+        '200':
+          description: put image ended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewImageResponse'
+        '400':
+          $ref: '#/components/responses/Response400'
+        '500':
+          $ref: '#/components/responses/Response500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewImageRequest'
+
+
+  /sar/put-image-immediate:
+    post:
+      summary: import new SAR image pulses immediatly prior all previous images
+      description: Immediately starts the process of creating a SAR image from SAR pulses and DTM data using fast
+        Backprojection (BP) algorithm. The Api can receive only one immediate image at the time.
+        If new request will be received while other is been process an error will be thrown
+      operationId: controllers.sar_controller.import_image_immediate
+      tags:
+        - SAR
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+      responses:
+        '200':
+          description: put image ended successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewImageResponse'
+        '400':
+          $ref: '#/components/responses/Response400'
+        '500':
+          $ref: '#/components/responses/Response500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewImageRequest'
+
+
+  /sar/image/data:
+    get:
+      summary: Returns the requested image data.
+      description: Retrieves information about images processed by the system.
+        When timeout_for_completion is not 0 the call is blocked until the image completes its stages in the system
+        and its img_id is one of IMG_DONE, IMG_ABORTED or IMG_FAILED. In case the wait time passes the time defined
+        by the timeout_for_completion parameter, the call returns with the image current img_data.
+      operationId: controllers.sar_controller.get_image_data
+      tags:
+        - SAR
+      responses:
+        '200':
+          description: image data return successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageDateResponse'
+        '400':
+          $ref: '#/components/responses/Response400'
+        '500':
+          $ref: '#/components/responses/Response500'
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+        - $ref: '#/components/parameters/ImageIdQueryParam'
+        - $ref: '#/components/parameters/TimeForCompletion'
+
+
+  /sar/image/abort/{image_id}:
+    delete:
+      summary: abort single image processing request.
+      description: Abort SAR image creation process. Do it whether the image is in the queue waiting
+        to be processed or it is in the middle of its BP process.
+      operationId: controllers.sar_controller.abort_image
+      tags:
+        - SAR
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '200':
+          description: image aborted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusOkResponse'
+        '400':
+          $ref: '#/components/responses/Response400'
+        '500':
+          $ref: '#/components/responses/Response500'
+
+
+  /sar/image/abort-all:
+    delete:
+      summary: abourt all images processing request.
+      description: Abort all SAR image creation processes. Do it whether the images are in the queue waiting to be
+        processed or they are in the middle of their BP process.
+      operationId: controllers.sar_controller.abort_all_images
+      tags:
+        - SAR
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+      responses:
+        '200':
+          description: images aborted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusOkResponse'
+        '500':
+          $ref: '#/components/responses/Response500'
+
+
+  /sar/image-db/flush:
+    delete:
+      summary: flush images database.
+      description: Cleanup images-database from all images that finished their process in the system.This means that
+        all images with the status IMG_DONE, IMG_ABORTED and IMG_FAILED will be removed from the images-database.
+        Returns SUCCESS in case the images database is cleaned successfully or exception otherwise
+      operationId: controllers.sar_controller.flush_images
+      tags:
+        - Utilities
+      parameters:
+        - $ref: '#/components/parameters/AllocationToken'
+      responses:
+        '200':
+          description: Database flushed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusOkResponse'
+        '500':
+          $ref: '#/components/responses/Response500'
+
+
+components:
+
+  responses:
+    Response400:
+      description: Error indicating that a validation exception occured
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BadValidationResponse'
+
+    Response500:
+      description: Error indicating that an internal server exception occured
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalServerErrorResponse'
+
+  parameters:
+    AllocationToken:
+      in: header
+      name: allocationToken
+      schema:
+        type: string
+      description: Authentication
+      required: true
+    ImageId:
+      in: path
+      name: image_id
+      schema:
+        type: string
+      required: true
+      description: Unique identifier of specific image
+      example: "235"
+    ImageIdQueryParam:
+      in: query
+      name: image_id
+      schema:
+        type: string
+      required: true
+      description: Unique identifier of specific image
+      example: "235"
+    TimeForCompletion:
+      in: query
+      name: time_for_completion
+      schema:
+        type: integer
+        default: 0
+      required: false
+      description: The time this call may wait for the image to complete its process (in seconds)
+      example: 2
+
+  schemas:
+    BadValidationResponse:
+      type: object
+      description: bad validation exception
+      properties:
+        message:
+          type: string
+      example:
+        {
+          "message": "Error occurred in"
+        }
+
+    InternalServerErrorResponse:
+      type: object
+      description: internal server exception
+      properties:
+        message:
+          type: string
+      example:
+        {
+          "message": "Error occurred in"
+        }
+
+    StatusOkResponse:
+      type: object
+      description: status that indicate the api call ended successfully
+      properties:
+        status:
+          type: string
+      example:
+        {
+          "status": "ok"
+        }
+
+    AliveResponse:
+      type: object
+      properties:
+        version:
+          type: string
+      example:
+        {
+          "Version": "1.0"
+        }
+
+
+    StatusResponse:
+      type: object
+      properties:
+        img_status:
+          type: string
+          enum:
+            - IMG_ENQUEUED
+            - IMG_WAITING_FOR_IMAGE_Q
+            - IMG_LOADED
+            - IMG_WAITING_FOR_GRL_BP
+            - IMG_PROCESSING
+            - IMG_DONE
+            - IMG_ABORTED
+            - IMG_FAILED
+          description: the status of an image received in the system.
+      example:
+        "img_status": "IMG_DONE"
+
+
+    ActiveImagesList:
+      type: object
+      properties:
+        imgs_list:
+          type: object
+          description: list of images that are in the input queue and the ones that are being processed.
+            The list includes the image identifier and their status which can be one of the following - IMG_ENQUEUED,
+            IMG_WAITING_FOR_IMAGE_Q, IMG_LOADED, IMG_WAITING_FOR_GRL_BP and IMG_PROCESSING. The list is ordered by
+            shortest time to process.
+      example:
+        {
+          "imgs_list": [ {
+            "img_id": "235",
+            "status": "IMG_ENQUEUED"
+          } ]
+        }
+
+    NewImageRequest:
+      type: object
+      required:
+        - output_dir
+      properties:
+        pulses_h5_file:
+          description: Path to H5 file containing the SAR pulses data.
+          type: string
+        dtm_h5_file:
+          type: string
+          description: Path to H5 file containing the DTM data.
+        cphd_file:
+          type: string
+          description: Path to CPHD file containing the Pulses & DTM data.
+        metadata:
+          description: User defined data.
+          type: string
+        output_dir:
+          type: string
+          description: Given Path to a directory which output file will be created.
+      example:
+        {
+          "pulses_h5_file": "/path/to/file",
+          "dtm_h5_file": "/path/to/file",
+          "cphd_file": "/path/to/file",
+          "metadata": "/path/to/metadata",
+          "output_dir": "/path/to/dir",
+        }
+
+    NewImageResponse:
+      type: object
+      properties:
+        img_id:
+          description: Unique identifier of specific image
+          type: string
+      example:
+        {
+          "img_id": "235"
+        }
+
+
+    ImageDateResponse:
+      type: object
+      properties:
+        img_status:
+          description: image status
+          type: string
+          enum:
+            - IMG_ENQUEUED
+            - IMG_WAITING_FOR_IMAGE_Q
+            - IMG_LOADED
+            - IMG_WAITING_FOR_GRL_BP
+            - IMG_PROCESSING
+            - IMG_DONE
+            - IMG_ABORTED
+            - IMG_FAILED
+        img_fail_msg:
+          description: image failed message if IMG_FAILED/IMG_ABORTED
+          type: string
+        metadata:
+          description: user metadata
+          type: string
+        pulses_file:
+          description: path to h5 input file
+          type: string
+        dtm_file:
+          description: path to h5 dtm file
+          type: string
+        out_image_file:
+          description: path to out image file. tamplate - /path/to/dir/img_{img_id}.H5
+          type: string
+        put time:
+          description: The time when put_image of this image called
+          type: string
+        start_time:
+          description: The time when image has started to be processed
+          type: string
+        end_time:
+          description: The time when img_status is set to IMG_DONE, IMG_ABORTED
+            or IMG_FAILED.
+          type: string
+      example:
+        {
+          "img_status": "IMG_DONE",
+          "img_fail_msg": "",
+          "metadata": "IMG_PROCESSING",
+          "pulses_file": "/path/to/file",
+          "dtm_file": "/path/to/file",
+          "out_image_file": "/path/to/dir/img_{img_id}.H5",
+          "put_time": "",
+          "start_time": "",
+          "end_time": ""
+        }
