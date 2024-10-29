@@ -128,7 +128,7 @@ paths:
               $ref: '#/components/schemas/NewImageRequest'
 
 
-  /sar/image/data:
+  /sar/image/data/{image_id}:
     get:
       summary: Returns the requested image data.
       description: Retrieves information about images processed by the system.
