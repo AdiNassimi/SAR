@@ -81,6 +81,7 @@ paths:
       summary: import new SAR image pulses
       description: Add an image to the queue of creating SAR images from SAR pulses and DTM data using fast
         Backprojection (BP) algorithm.
+        Make sure that all input file paths must start with 'input/' and all output file paths must start with 'output/'.
       operationId: controllers.sar_controller.import_image
       tags:
         - SAR
@@ -110,7 +111,8 @@ paths:
       summary: import new SAR image pulses immediatly prior all previous images
       description: Immediately starts the process of creating a SAR image from SAR pulses and DTM data using fast
         Backprojection (BP) algorithm. The Api can receive only one immediate image at the time.
-        If new request will be received while other is been process an error will be thrown
+        If new request will be received while other is been process an error will be thrown! 
+        Make sure that all input file paths must start with 'input/' and all output file paths must start with 'output/'.
       operationId: controllers.sar_controller.import_image_immediate
       tags:
         - SAR
