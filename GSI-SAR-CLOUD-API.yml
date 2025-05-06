@@ -383,6 +383,10 @@ components:
         output_dir:
           type: string
           description: Given Path to a directory which output file will be created.
+        output_file_format:
+          type: string
+          description: The output file format to be created (HDF5 or GeoTIFF).
+          default: "HDF5"
       example:
         {
           "pulses_h5_file": "/path/to/file",
@@ -390,6 +394,7 @@ components:
           "cphd_file": "/path/to/file",
           "metadata": "/path/to/metadata",
           "output_dir": "/path/to/dir",
+          "output_file_format": "HDF5"
         }
 
     NewImageResponse:
